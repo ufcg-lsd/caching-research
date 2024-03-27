@@ -1,0 +1,68 @@
+---
+title: "Stack Distance and HitRatio"
+output: html_document
+date: "03-08-2023"
+---
+
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+library(forcats)
+library(boot)
+library(broom)
+library(glue)
+library(tidyverse)
+library(here)
+library(scales)
+library(fitdistrplus)
+library(stats4)
+library(MASS)
+# for other necessary test or graphical tools
+library(survival)
+library(distrMod)
+library(ggpubr)
+```
+
+```{r}
+input_path = here("data/stack-distance-hitratio.csv")
+df_input <- read.csv(input_path, header = TRUE, sep = ",")
+```
+
+```{r}
+df_capacity_per_hr <- df_input %>%
+  group_by(hitRatio) %>%
+  mutate(
+    capacity = as.integer(max(stackDist))
+  ) %>%
+  ungroup() %>%
+  mutate(
+    hitRatio = hitRatio * 100,
+    capacityMb = as.integer(capacity * (1.0 / 8000.0))
+  ) %>%
+  distinct(capacity, capacityMb, hitRatio)
+```
+
+```{r, fig.width=9, fig.height=5}
+df_capacity_per_hr %>%
+  ggline(x = "capacityMb", y = "hitRatio") %>%
+  ggpar(
+    ylab = "Hit Ratio (%)",
+    xlab = "Capacity (Mb)", 
+    caption = "Considering that NGINX docs say that 1MB KeyZone equals to 8000 items" 
+  ) + 
+  scale_x_continuous(labels = scales::comma)
+```
+
+```{r, fig.width=9, fig.height=5}
+df_capacity_per_hr %>%
+  ggline(x = "capacity", y = "hitRatio") %>%
+  ggpar(
+    ylab = "Hit Ratio (%)",
+    xlab = "Capacity (#items)"
+  ) + 
+  scale_x_continuous(labels = scales::comma)
+```
+
+
+
